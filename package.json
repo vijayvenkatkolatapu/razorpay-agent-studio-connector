@@ -20,7 +20,7 @@
     "agent-studio",
     "connector"
   ],
-  "author": "Kolate",
+  "author": "Vijay Venkat",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",
