@@ -1,0 +1,39 @@
+{
+  "name": "woocommerce-mcp-connector",
+  "version": "1.0.0",
+  "description": "WooCommerce private connector implementing Model Context Protocol (MCP) with rate-limiting, payment reconciliation primitives, and developer playground.",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/server.ts",
+    "mcp": "tsx src/index.ts",
+    "demo": "tsx src/demo.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "woocommerce",
+    "mcp",
+    "model-context-protocol",
+    "razorpay",
+    "agent-studio",
+    "connector"
+  ],
+  "author": "Kolate",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
