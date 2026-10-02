@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Razorpay Agent Studio — WooCommerce Private Connector</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rzp: {
+              navy: '#0c2340',
+              blue: '#0c6cf2',
+              darkblue: '#0848ab',
+              light: '#f4f8fd',
+              accent: '#3395ff',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .code-box { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-rzp-navy text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 bg-rzp-blue rounded-lg flex items-center justify-center font-bold text-xl shadow-inner">
+          R
+        </div>
+        <div>
+          <span class="text-lg font-bold tracking-tight">Razorpay Agent Studio</span>
+          <span class="ml-2 text-xs bg-blue-900 text-blue-200 px-2.5 py-0.5 rounded-full font-mono">WooCommerce Connector (MCP)</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4 text-sm">
+        <div id="mode-badge" class="flex items-center space-x-1.5 bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="mode-text">MOCK SANDBOX ACTIVE</span>
+        </div>
+        <a href="https://modelcontextprotocol.io" target="_blank" class="text-slate-300 hover:text-white transition flex items-center space-x-1 text-xs">
+          <span>MCP Standard</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b border-slate-200 sticky top-16 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm font-medium">
+      <button onclick="switchTab('chat')" id="tab-chat" class="tab-btn py-3.5 border-b-2 border-rzp-blue text-rzp-blue flex items-center space-x-2">
+        <i class="fa-solid fa-robot"></i>
+        <span>Agent Playground</span>
+      </button>
+      <button onclick="switchTab('orders')" id="tab-orders" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-2">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <span>Merchant Orders</span>
+      </button>
+      <button onclick="switchTab('tools')" id="tab-tools" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-2">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+        <span>MCP Tool Explorer</span>
+      </button>
+      <button onclick="switchTab('resilience')" id="tab-resilience" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-2">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Rate-Limiter & Resilience</span>
+      </button>
+      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-2">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings & Auth</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ============================================================ -->
+    <!-- TAB 1: AGENT PLAYGROUND -->
+    <!-- ============================================================ -->
+    <div id="view-chat" class="tab-view block space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[750px]">
+        
+        <!-- Chat Header -->
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Autonomous Merchant Agent</h2>
+            <p class="text-xs text-slate-500">Autonomous agent reasoning over WooCommerce orders and Razorpay reconciliation via MCP</p>
+          </div>
+          <button onclick="clearChat()" class="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 px-2.5 py-1 border border-slate-200 rounded-md bg-white">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Clear Conversation</span>
+          </button>
+        </div>
+
+        <!-- Chat History -->
+        <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/50">
+          
+          <!-- Welcome Message -->
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded-full bg-rzp-blue text-white flex items-center justify-center flex-shrink-0 text-sm">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-4 max-w-2xl shadow-sm space-y-2">
+              <p class="text-sm text-slate-700">
+                Hello! I am your <strong>Razorpay Agent Studio Assistant</strong> connected to your WooCommerce storefront via <strong>Model Context Protocol (MCP)</strong>.
+              </p>
+              <p class="text-sm text-slate-700">
+                I can inspect orders, search customer histories, audit line items, and cross-reconcile transactions with Razorpay payment records. Try asking a question or click a prompt below!
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Suggested Prompt Chips -->
+        <div class="px-6 py-2 bg-white border-t border-slate-100 flex flex-wrap gap-2 text-xs">
+          <span class="text-slate-400 self-center">Try:</span>
+          <button onclick="sendQuickPrompt('List all processing orders')" class="prompt-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition">
+            📋 List processing orders
+          </button>
+          <button onclick="sendQuickPrompt('Show me details for order 1042')" class="prompt-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition">
+            📦 Details for order #1042
+          </button>
+          <button onclick="sendQuickPrompt('Reconcile payment pay_P1A98765432101 for order 1042')" class="prompt-chip bg-blue-50 hover:bg-blue-100 text-rzp-blue font-medium px-3 py-1.5 rounded-full transition border border-blue-200">
+            ⚡ Reconcile pay_P1A98765432101
+          </button>
+          <button onclick="sendQuickPrompt('Search orders for Priya Nair')" class="prompt-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition">
+            🔍 Search customer Priya Nair
+          </button>
+          <button onclick="sendQuickPrompt('What is the current rate limiter status?')" class="prompt-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition">
+            📊 Rate limiter metrics
+          </button>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-4 bg-white border-t border-slate-200 flex items-center space-x-3">
+          <input
+            id="chat-input"
+            type="text"
+            placeholder="Ask about orders, customer searches, or payment reconciliations..."
+            class="flex-1 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rzp-blue focus:border-transparent"
+            onkeydown="if(event.key === 'Enter') sendMessage()"
+          />
+          <button
+            onclick="sendMessage()"
+            id="send-btn"
+            class="bg-rzp-blue hover:bg-rzp-darkblue text-white px-5 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-2"
+          >
+            <span>Ask Agent</span>
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: MERCHANT ORDERS TABLE -->
+    <!-- ============================================================ -->
+    <div id="view-orders" class="tab-view hidden space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">WooCommerce Storefront Orders</h2>
+            <p class="text-xs text-slate-500">Live order repository synced with payment statuses and line item inventory</p>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="text-slate-400">Filter status:</span>
+            <select id="orders-filter-status" onchange="loadOrdersTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-rzp-blue">
+              <option value="any">All Statuses</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="refunded">Refunded</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button onclick="loadOrdersTable()" class="border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600">
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-y border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Order ID</th>
+                <th class="py-3 px-4">Customer</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Items</th>
+                <th class="py-3 px-4">Total</th>
+                <th class="py-3 px-4">Payment Method</th>
+                <th class="py-3 px-4">Transaction ID</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="9" class="py-8 text-center text-slate-400">Loading orders...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 3: MCP TOOL EXPLORER -->
+    <!-- ============================================================ -->
+    <div id="view-tools" class="tab-view hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Tool Selector -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+          <h3 class="text-base font-semibold text-slate-900">Registered MCP Tools</h3>
+          <p class="text-xs text-slate-500">Select any tool defined in the Model Context Protocol specification to execute directly.</p>
+          <div id="tools-list" class="space-y-2">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Right: Execution & Output -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 id="selected-tool-name" class="font-bold text-slate-900 text-base font-mono">list_orders</h4>
+                <p id="selected-tool-desc" class="text-xs text-slate-500 mt-1">List orders from the merchant store with pagination and filtering.</p>
+              </div>
+              <button onclick="executeSelectedTool()" class="bg-rzp-blue hover:bg-rzp-darkblue text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-play text-xs"></i>
+                <span>Execute Tool</span>
+              </button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Input Parameters (JSON)</label>
+              <textarea id="tool-input-json" rows="6" class="w-full border border-slate-300 rounded-lg p-3 text-xs code-box bg-slate-50 focus:outline-none focus:ring-2 focus:ring-rzp-blue"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">MCP Response Output</label>
+              <pre id="tool-output-json" class="w-full border border-slate-200 rounded-lg p-3 text-xs code-box bg-slate-900 text-emerald-400 overflow-x-auto min-h-[220px] max-h-[350px]">Click "Execute Tool" to view the response payload.</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: RATE LIMITER & RESILIENCE -->
+    <!-- ============================================================ -->
+    <div id="view-resilience" class="tab-view hidden space-y-6">
+      
+      <!-- Metrics Overview Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Token Bucket Capacity</span>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="metric-tokens" class="text-2xl font-bold text-slate-900">60 / 60</span>
+            <span class="text-xs text-slate-400">Tokens</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+            <div id="token-bar" class="bg-rzp-blue h-2 rounded-full transition-all duration-300" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Dispatched Requests</span>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="metric-total" class="text-2xl font-bold text-slate-900">0</span>
+            <span class="text-xs text-slate-400">Calls</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">All read, search, and reconcile operations</p>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Throttled (HTTP 429)</span>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="metric-throttled" class="text-2xl font-bold text-amber-600">0</span>
+            <span class="text-xs text-slate-400">Events</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">Interceptions handled with exponential backoff</p>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Successful Retries</span>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="metric-retries" class="text-2xl font-bold text-emerald-600">0</span>
+            <span class="text-xs text-slate-400">Recovered</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">Self-healed without failing agent context</p>
+        </div>
+
+      </div>
+
+      <!-- Interactive Throttling Simulation -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Simulate Upstream Throttling & Self-Healing Backoff</h3>
+            <p class="text-xs text-slate-500">Triggers an artificial HTTP 429 response with a <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">Retry-After: 1</code> header to demonstrate how the rate limiter executes exponential backoff with full jitter and recovers seamlessly.</p>
+          </div>
+          <button id="throttle-btn" onclick="simulateThrottle()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-2 flex-shrink-0">
+            <i class="fa-solid fa-bolt-lightning text-xs"></i>
+            <span>Simulate HTTP 429 Throttle</span>
+          </button>
+        </div>
+
+        <!-- Simulation Progress / Log -->
+        <div id="throttle-log" class="border border-slate-200 rounded-lg p-4 bg-slate-900 text-xs code-box text-slate-300 min-h-[140px] space-y-1">
+          <div class="text-slate-500">// Throttling event simulator ready. Click above to trigger simulated rate limit.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 5: SETTINGS & AUTH -->
+    <!-- ============================================================ -->
+    <div id="view-settings" class="tab-view hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6 max-w-3xl">
+        
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Authentication & Environment Settings</h2>
+          <p class="text-xs text-slate-500">Configure connection mode and API credentials for WooCommerce storefront</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Connector Engine Mode</label>
+            <div class="grid grid-cols-2 gap-4">
+              <label class="border border-slate-200 rounded-lg p-4 flex items-start space-x-3 cursor-pointer hover:bg-slate-50 transition">
+                <input type="radio" name="conn-mode" value="mock" checked class="mt-1 text-rzp-blue focus:ring-rzp-blue" onchange="toggleConfigInputs()" />
+                <div>
+                  <span class="block text-sm font-semibold text-slate-900">Mock Sandbox (Zero-Config)</span>
+                  <span class="block text-xs text-slate-500 mt-0.5">Built-in deterministic merchant store in INR with Razorpay transactions. No external credentials required.</span>
+                </div>
+              </label>
+
+              <label class="border border-slate-200 rounded-lg p-4 flex items-start space-x-3 cursor-pointer hover:bg-slate-50 transition">
+                <input type="radio" name="conn-mode" value="live" class="mt-1 text-rzp-blue focus:ring-rzp-blue" onchange="toggleConfigInputs()" />
+                <div>
+                  <span class="block text-sm font-semibold text-slate-900">Live WooCommerce Store</span>
+                  <span class="block text-xs text-slate-500 mt-0.5">Connect to a live WordPress WooCommerce 3.5+ instance over HTTPS REST API v3.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div id="live-inputs" class="space-y-4 pt-2 hidden">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Store URL</label>
+              <input id="cfg-url" type="url" placeholder="https://your-merchant-store.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rzp-blue" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Consumer Key (ck_...)</label>
+                <input id="cfg-key" type="text" placeholder="ck_test_..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rzp-blue" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Consumer Secret (cs_...)</label>
+                <input id="cfg-secret" type="password" placeholder="cs_test_..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rzp-blue" />
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span id="save-status" class="text-xs text-slate-500"></span>
+            <button onclick="saveConfiguration()" class="bg-rzp-blue hover:bg-rzp-darkblue text-white px-5 py-2 rounded-lg text-sm font-medium transition">
+              Apply Configuration
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    Razorpay Merchant Solutions &bull; WooCommerce Private Connector (MCP) &bull; Built for Autonomous Agent Workflows
+  </footer>
+
+  <!-- Application Logic JavaScript -->
+  <script>
+    let activeTab = 'chat';
+    let availableTools = [];
+    let selectedTool = null;
+
+    // Tab Switching
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-rzp-blue', 'text-rzp-blue');
+        btn.classList.add('border-transparent', 'text-slate-600');
+      });
+
+      const view = document.getElementById(`view-${tab}`);
+      const btn = document.getElementById(`tab-${tab}`);
+      if (view && btn) {
+        view.classList.remove('hidden');
+        btn.classList.add('border-rzp-blue', 'text-rzp-blue');
+        btn.classList.remove('border-transparent', 'text-slate-600');
+        activeTab = tab;
+
+        if (tab === 'orders') loadOrdersTable();
+        if (tab === 'resilience') fetchMetrics();
+      }
+    }
+
+    // Agent Chat Functions
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendUserMessage(text);
+      input.value = '';
+
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i><span>Thinking...</span>`;
+
+      try {
+        const response = await fetch('/api/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+        if (data.success) {
+          appendAgentResponse(data);
+        } else {
+          appendErrorMessage(data.error || 'Agent encountered an error.');
+        }
+      } catch (err) {
+        appendErrorMessage('Network connection error: ' + err.message);
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = `<span>Ask Agent</span><i class="fa-solid fa-paper-plane text-xs"></i>`;
+        fetchMetrics();
+      }
+    }
+
+    function sendQuickPrompt(prompt) {
+      document.getElementById('chat-input').value = prompt;
+      sendMessage();
+    }
+
+    function appendUserMessage(text) {
+      const box = document.getElementById('chat-messages');
+      const msg = document.createElement('div');
+      msg.className = 'flex items-start justify-end space-x-3';
+      msg.innerHTML = `
+        <div class="bg-rzp-blue text-white rounded-2xl rounded-tr-none px-4 py-3 max-w-xl shadow-sm text-sm">
+          ${escapeHtml(text)}
+        </div>
+        <div class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center flex-shrink-0 text-xs">
+          <i class="fa-solid fa-user"></i>
+        </div>
+      `;
+      box.appendChild(msg);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendAgentResponse(step) {
+      const box = document.getElementById('chat-messages');
+      const msg = document.createElement('div');
+      msg.className = 'flex items-start space-x-3';
+
+      const formattedAnswer = step.finalAnswer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`(.*?)`/g, '<code class="bg-slate-100 px-1 py-0.5 rounded text-xs text-rzp-darkblue font-mono">$1</code>')
+        .replace(/\n/g, '<br/>');
+
+      msg.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-rzp-blue text-white flex items-center justify-center flex-shrink-0 text-sm">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-4 max-w-2xl shadow-sm space-y-3">
+          <!-- Chain of thought accordion -->
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600">
+            <div class="flex items-center justify-between cursor-pointer font-medium" onclick="this.nextElementSibling.classList.toggle('hidden')">
+              <span class="flex items-center space-x-1.5 text-slate-700">
+                <i class="fa-solid fa-brain text-rzp-blue"></i>
+                <span>Agent Reasoning & MCP Tool Execution</span>
+              </span>
+              <span class="text-[10px] bg-blue-100 text-rzp-blue font-mono px-2 py-0.5 rounded">Tool: ${step.tool}</span>
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-200 space-y-1.5 hidden text-slate-500">
+              <p><strong>Thought:</strong> ${escapeHtml(step.thought)}</p>
+              <div>
+                <strong>Arguments:</strong>
+                <pre class="bg-white p-1.5 rounded border border-slate-200 mt-0.5 text-[11px] code-box text-slate-800">${escapeHtml(JSON.stringify(step.toolArgs, null, 2))}</pre>
+              </div>
+            </div>
+          </div>
+          <!-- Synthesized Answer -->
+          <div class="text-sm text-slate-800 leading-relaxed">
+            ${formattedAnswer}
+          </div>
+        </div>
+      `;
+      box.appendChild(msg);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendErrorMessage(err) {
+      const box = document.getElementById('chat-messages');
+      const msg = document.createElement('div');
+      msg.className = 'flex items-start space-x-3';
+      msg.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center flex-shrink-0 text-sm">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl rounded-tl-none p-4 max-w-xl text-sm">
+          ${escapeHtml(err)}
+        </div>
+      `;
+      box.appendChild(msg);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function clearChat() {
+      document.getElementById('chat-messages').innerHTML = '';
+    }
+
+    // Orders Table
+    async function loadOrdersTable() {
+      const status = document.getElementById('orders-filter-status').value;
+      const tbody = document.getElementById('orders-tbody');
+      tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Loading orders...</td></tr>`;
+
+      try {
+        const url = status && status !== 'any' ? `/api/orders?status=${status}` : '/api/orders';
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (!data.orders || data.orders.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">No orders found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.orders.map(o => {
+          const statusBadge = getStatusBadge(o.status);
+          const customerName = `${o.billing.first_name || ''} ${o.billing.last_name || ''}`;
+          const itemsCount = o.line_items ? o.line_items.reduce((acc, it) => acc + it.quantity, 0) : 0;
+          return `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="py-3 px-4 font-semibold text-slate-900">#${o.id}</td>
+              <td class="py-3 px-4">
+                <div class="font-medium text-slate-800">${escapeHtml(customerName)}</div>
+                <div class="text-xs text-slate-400">${escapeHtml(o.billing.email || '')}</div>
+              </td>
+              <td class="py-3 px-4 text-xs text-slate-500">${new Date(o.date_created).toLocaleDateString()}</td>
+              <td class="py-3 px-4 text-xs">${itemsCount} item(s)</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">${o.currency} ${o.total}</td>
+              <td class="py-3 px-4 text-xs capitalize">${escapeHtml(o.payment_method || 'N/A')}</td>
+              <td class="py-3 px-4 text-xs code-box text-slate-500">${escapeHtml(o.transaction_id || '—')}</td>
+              <td class="py-3 px-4">${statusBadge}</td>
+              <td class="py-3 px-4 text-right">
+                ${o.transaction_id ? `
+                  <button onclick="reconcileOrderFromTable(${o.id}, '${o.transaction_id}', ${o.total})" class="text-xs bg-blue-50 text-rzp-blue hover:bg-blue-100 font-medium px-2.5 py-1 rounded transition border border-blue-200">
+                    Reconcile
+                  </button>
+                ` : `<span class="text-xs text-slate-400">No Tx ID</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-rose-500">Error loading orders: ${err.message}</td></tr>`;
+      }
+    }
+
+    function getStatusBadge(status) {
+      switch (status) {
+        case 'completed': return '<span class="bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">Completed</span>';
+        case 'processing': return '<span class="bg-blue-100 text-blue-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">Processing</span>';
+        case 'pending': return '<span class="bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">Pending</span>';
+        case 'refunded': return '<span class="bg-purple-100 text-purple-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">Refunded</span>';
+        case 'failed': return '<span class="bg-rose-100 text-rose-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">Failed</span>';
+        default: return `<span class="bg-slate-100 text-slate-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">${status}</span>`;
+      }
+    }
+
+    function reconcileOrderFromTable(orderId, txId, amount) {
+      switchTab('chat');
+      sendQuickPrompt(`Reconcile payment ${txId} for order ${orderId}`);
+    }
+
+    // MCP Tools Tab
+    async function loadMCPTools() {
+      try {
+        const res = await fetch('/api/tools');
+        const data = await res.json();
+        availableTools = data.tools;
+        const listContainer = document.getElementById('tools-list');
+        listContainer.innerHTML = availableTools.map((t, idx) => `
+          <div onclick="selectTool(${idx})" class="tool-item p-3 border border-slate-200 rounded-lg hover:border-rzp-blue hover:bg-blue-50/40 cursor-pointer transition ${idx === 0 ? 'border-rzp-blue bg-blue-50/30' : ''}">
+            <div class="font-mono text-xs font-bold text-slate-800">${t.name}</div>
+            <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">${t.description}</div>
+          </div>
+        `).join('');
+
+        if (availableTools.length > 0) {
+          selectTool(0);
+        }
+      } catch (err) {
+        console.error('Failed to load tools:', err);
+      }
+    }
+
+    function selectTool(index) {
+      selectedTool = availableTools[index];
+      document.querySelectorAll('.tool-item').forEach((el, idx) => {
+        if (idx === index) {
+          el.classList.add('border-rzp-blue', 'bg-blue-50/30');
+        } else {
+          el.classList.remove('border-rzp-blue', 'bg-blue-50/30');
+        }
+      });
+
+      document.getElementById('selected-tool-name').textContent = selectedTool.name;
+      document.getElementById('selected-tool-desc').textContent = selectedTool.description;
+
+      // Provide reasonable sample defaults for each tool
+      let defaultArgs = {};
+      if (selectedTool.name === 'list_orders') defaultArgs = { status: 'processing', per_page: 5 };
+      else if (selectedTool.name === 'get_order') defaultArgs = { order_id: 1042 };
+      else if (selectedTool.name === 'search_orders') defaultArgs = { query: 'Headphones', limit: 5 };
+      else if (selectedTool.name === 'reconcile_payment') defaultArgs = { order_id: 1042, razorpay_payment_id: 'pay_P1A98765432101', expected_amount: 4999.0 };
+      else if (selectedTool.name === 'get_connector_metrics') defaultArgs = {};
+
+      document.getElementById('tool-input-json').value = JSON.stringify(defaultArgs, null, 2);
+      document.getElementById('tool-output-json').textContent = '// Click "Execute Tool" to run';
+    }
+
+    async function executeSelectedTool() {
+      if (!selectedTool) return;
+      const inputStr = document.getElementById('tool-input-json').value;
+      const outputBox = document.getElementById('tool-output-json');
+      let args = {};
+      try {
+        args = inputStr ? JSON.parse(inputStr) : {};
+      } catch (e) {
+        outputBox.textContent = 'Invalid JSON: ' + e.message;
+        return;
+      }
+
+      outputBox.textContent = 'Executing MCP tool...';
+      try {
+        const res = await fetch('/api/tools/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: selectedTool.name, arguments: args })
+        });
+        const data = await res.json();
+        outputBox.textContent = JSON.stringify(data, null, 2);
+        fetchMetrics();
+      } catch (err) {
+        outputBox.textContent = 'Execution Error: ' + err.message;
+      }
+    }
+
+    // Rate Limiter & Resilience
+    async function fetchMetrics() {
+      try {
+        const res = await fetch('/api/metrics');
+        const m = await res.json();
+        document.getElementById('metric-tokens').textContent = `${m.currentTokens} / 60`;
+        const pct = Math.min(100, Math.max(0, (m.currentTokens / 60) * 100));
+        document.getElementById('token-bar').style.width = `${pct}%`;
+        document.getElementById('metric-total').textContent = m.totalRequests;
+        document.getElementById('metric-throttled').textContent = m.throttledRequests;
+        document.getElementById('metric-retries').textContent = m.successfulRetries;
+      } catch (err) {
+        console.error('Failed to fetch metrics:', err);
+      }
+    }
+
+    async function simulateThrottle() {
+      const logBox = document.getElementById('throttle-log');
+      const btn = document.getElementById('throttle-btn');
+      btn.disabled = true;
+
+      logBox.innerHTML = `
+        <div class="text-amber-400">[SIMULATION] Triggering artificial HTTP 429 Too Many Requests...</div>
+        <div class="text-slate-400">[RateLimiter] Upstream returned 429 with 'Retry-After: 1' header.</div>
+        <div class="text-blue-400 animate-pulse">[RateLimiter] Attempt #1: Backing off for 1000ms with jitter...</div>
+      `;
+
+      try {
+        const res = await fetch('/api/simulate/throttle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ retryAfter: 1 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          logBox.innerHTML += `
+            <div class="text-emerald-400 font-semibold">[SUCCESS] Backoff elapsed (${data.elapsedMs}ms). Request automatically retried and succeeded!</div>
+            <div class="text-slate-400">Result: ${escapeHtml(data.result)}</div>
+          `;
+        } else {
+          logBox.innerHTML += `<div class="text-rose-400">[ERROR] ${escapeHtml(data.error)}</div>`;
+        }
+      } catch (err) {
+        logBox.innerHTML += `<div class="text-rose-400">[NETWORK ERROR] ${escapeHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+        fetchMetrics();
+      }
+    }
+
+    // Settings
+    function toggleConfigInputs() {
+      const mode = document.querySelector('input[name="conn-mode"]:checked').value;
+      const liveInputs = document.getElementById('live-inputs');
+      if (mode === 'live') {
+        liveInputs.classList.remove('hidden');
+      } else {
+        liveInputs.classList.add('hidden');
+      }
+    }
+
+    async function saveConfiguration() {
+      const mode = document.querySelector('input[name="conn-mode"]:checked').value;
+      const statusSpan = document.getElementById('save-status');
+      statusSpan.textContent = 'Applying...';
+
+      const payload = { mode };
+      if (mode === 'live') {
+        payload.woocommerceUrl = document.getElementById('cfg-url').value;
+        payload.consumerKey = document.getElementById('cfg-key').value;
+        payload.consumerSecret = document.getElementById('cfg-secret').value;
+      }
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusSpan.textContent = 'Configuration applied successfully!';
+          document.getElementById('mode-text').textContent = `${mode.toUpperCase()} ACTIVE`;
+          setTimeout(() => statusSpan.textContent = '', 3000);
+        } else {
+          statusSpan.textContent = 'Error: ' + data.error;
+        }
+      } catch (err) {
+        statusSpan.textContent = 'Network error: ' + err.message;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadMCPTools();
+      fetchMetrics();
+      setInterval(fetchMetrics, 3000);
+    });
+  </script>
+</body>
+</html>
