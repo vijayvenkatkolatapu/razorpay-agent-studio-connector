@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: razorpay-agent-studio-connector
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CONNECTOR_MODE
+        value: mock
+      - key: PORT
+        value: 10000
