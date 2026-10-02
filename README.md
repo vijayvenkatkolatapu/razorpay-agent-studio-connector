@@ -4,6 +4,8 @@ A private connector enabling AI agents (such as Razorpay Agent Studio) to query,
 
 Includes a token-bucket rate limiter with automatic backoff, a local sandbox mode for offline testing, a suite of unit/integration tests, and an interactive developer playground.
 
+https://razorpay-agent-studio-connector.onrender.com/
+
 ---
 
 ## Why this exists
